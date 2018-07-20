@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <!--
+###############################################################################
+# OpenLP - Open Source Lyrics Projection                                      #
+# --------------------------------------------------------------------------- #
+# Copyright (c) 2008-2017 OpenLP Developers                                   #
+# --------------------------------------------------------------------------- #
+# This program is free software; you can redistribute it and/or modify it     #
+# under the terms of the GNU General Public License as published by the Free  #
+# Software Foundation; version 2 of the License.                              #
+#                                                                             #
+# This program is distributed in the hope that it will be useful, but WITHOUT #
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or       #
+# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for    #
+# more details.                                                               #
+#                                                                             #
+# You should have received a copy of the GNU General Public License along     #
+# with this program; if not, write to the Free Software Foundation, Inc., 59  #
+# Temple Place, Suite 330, Boston, MA 02111-1307 USA                          #
+###############################################################################
+-->
+
+  <meta name="viewport" content="width=device-width, minimum-scale=1, maximum-scale=1" />
+  <title>${app_title}</title>
+  <link rel="stylesheet" href="/files/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="/files/css/custom.css"/>
+  <script src="/files/js/jquery-3.3.1.min.js"></script>
+  <script src="/files/js/popper.min.js"></script>
+  <script src="/files/js/bootstrap.min.js"></script>
+
+  <link rel="stylesheet" href="/files/css/remote.css"/>
+  <script src="/files/js/commonlib.js"></script>
+  <script src="/files/js/biblesearch.js"></script>
+  <script src="/files/js/songsearch.js"></script>
+  <script src="/files/js/remote.js"></script>
+  <script src="/files/js/openlpcontrol.js"></script>
+
+  <link rel="icon" type="image/png" sizes="192x192"  href="/files/images/android-icon-192x192.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/files/images/favicon-32x32.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="/files/images/favicon-96x96.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/files/images/favicon-16x16.png">
+  <meta name="msapplication-TileColor" content="#ffffff">
+  <meta name="msapplication-TileImage" content="/files/images/ms-icon-144x144.png">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="manifest" href="/files/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+
+</head>
+<body>
+<nav class="navbar sticky-top navbar-expand-sm navbar-light bg-light justify-content-between">
+  <form id="searchForm" class="form-inline">
+      <div class="input-group">
+		  <input id="searchText" type="text" class="form-control" placeholder="Buscar una canción" aria-label="Canción a buscar" aria-describedby="basic-addon2">
+		  <div class="input-group-append">
+			<button class="btn btn-outline-success" type="submit">></button>
+      <button class="btn btn-danger" type="button" id="cancelSearch" style="display: none;">Borrar</button>
+      <button class="btn btn-outline-warning" type="button" id="setIMGbutton">Imagen</button>
+		  </div>
+	 </div>
+  </form>
+
+  <style src="files/css/remote.css"></style>
+
+<div class="navbar-nav dropdown">
+  <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+    Opciones
+  </button>
+  <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuButton">
+    <button type="button" class="btn btn-outline-default btn-circle"><img class="img-circle" src="files/img/note.png"/></button>
+    <button type="button" class="btn btn-outline-default btn-circle"><img class="img-circle" src="files/img/fav.png"/></button>
+    <button id="bibleModalButton" type="button" class="btn btn-outline-default btn-circle loader" disabled>
+       <div id="bibleModalButtonLoader" class="">
+         <img class="img-circle" src="files/img/bible.png"/>
+       </div>
+    </button>
+
+    <a class="dropdown-item" href="#" onclick="SongSearch.update()">Actualizar</a>
+  </div>
+</div>
+</nav>
+
+<div class="accordion" id="accordion"></div>
+
+<div id="songPanel" class="text-center h3">
+  <ul class="list-group">
+  </ul>
+</div>
+
+<!-- Modal Song Lib Update -->
+<div class="modal fade" id="updatingModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true" data-keyboard="false" data-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalCenterTitle">Actualizando Canciones</h5>
+      </div>
+      <div class="modal-body">
+        Esto puede tardar un cachito...
+        <div class="progress">
+          <div id="updateProgess" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<div class="modal fade" id="bibleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true" data-keyboard="false" data-backdrop="static">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalCenterTitle">Selector de Versículos</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <ul class="nav nav-tabs" id="bibleTabs" role="tablist">
+          <li class="nav-item">
+            <a class="nav-link active" id="libro-tab" data-toggle="tab" href="#libro" role="tab" aria-controls="libro" aria-selected="true">Libro</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" id="capitulo-tab" data-toggle="tab" href="#capitulo" role="tab" aria-controls="capitulo" aria-selected="false">Capítulo</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" id="versiculo-tab" data-toggle="tab" href="#versiculo" role="tab" aria-controls="versiculo" aria-selected="false">Versículo</a>
+          </li>
+        </ul>
+        <div class="tab-content" id="libro-tabcontent">
+          <div class="tab-pane fade show active" id="libro" role="tabpanel" aria-labelledby="libro-tab">
+            <form class="bibWrap d-flex flex-column" id="searchBookForm">
+              <div class="form-row header">
+                <div class="col-7">
+                  <input id="searchBook" type="text" class="form-control" placeholder="Libro">
+                </div>
+              </div>
+              <div class="bibContent">
+                <ul class="list-group" id="bibBookList">
+                </ul>
+              </div>
+            </form>
+          </div>
+          <div class="tab-pane fade" id="capitulo" role="tabpanel" aria-labelledby="capitulo-tab">
+            <div class="tab-content bibContent" id="capitulo-tabcontent">
+            </div>
+          </div>
+          <div class="tab-pane fade" id="versiculo" role="tabpanel" aria-labelledby="versiculo-tab">
+            <div class="tab-content" id="versiculo-tabcontent">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+setInterval(Remote.updateDOM, 1000);
+//****************** Envents ******************
+$(function() {
+  // Handler for .ready() called.
+  var k = SongSearch.fetch_local_data();
+
+  console.log("Songs Loaded: "+k);
+  // clean
+  Remote.cancelSearch();
+
+  // Load Bibles database
+  /*window.setTimeout(function(){
+    BibleSearch.init(function(){
+      console.log("Bible Ready");
+      Remote.loadBibleData();
+      $("#bibleModalButton").prop("disabled", false);
+      $("#bibleModalButton").click(function(){
+        $('#bibleModal').modal(focus);
+      });
+
+    }, function(p){
+      console.log("Bible testing PROGRESS: "+Math.round(100*p)+"%");
+    });
+  },1000); // Delay */
+
+  /*BibleSearch.init(function(res){
+    console.log("BibleSearch status: " + res.status);
+  });*/
+
+  // Modal triggers
+  $("#bibleModal").on('show.bs.modal', function(){
+    Remote.bibleModalShowTrigger();
+  });
+
+});
+
+$("#searchBookForm").submit(function(event){
+  event.preventDefault();
+});
+
+$("#searchForm").submit(function( event ) {
+  event.preventDefault();
+  Remote.goSearch();
+});
+$("#searchText").keyup(function(){
+  Remote.goSearch();
+  $("#cancelSearch").toggle($("#searchText").val()?true:false);
+});
+$("#cancelSearch").click(Remote.cancelSearch); //?
+
+$("#setIMGbutton").click(function(){
+  var id = 0
+  var text = "{\"request\": {\"id\": " + id + "}}";
+  $.getJSON("/api/service/set",{"data": text});
+});
+
+
+$("#searchBook").keyup(function(){
+  Remote.filterBibleBooks($("#searchBook").val());
+  //$("#cancelBookSearch").toggle($("#searchText").val()?true:false);
+});
+</script>
+
+</body>
+</html>
