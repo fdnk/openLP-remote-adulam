@@ -1,4 +1,5 @@
 window.OpenLP = {
+  // API for OpenLP Control
   _escapeId: function(id){
     return (typeof id === "number") ? id : ("\"" + id + "\"");
   },
@@ -6,12 +7,12 @@ window.OpenLP = {
     /* Sets a new song, bible, image, service o whatever in server.
     Usage:
     >> OpenLP.setSlide(0,"service",console.log);
-    >> OpenLP.setSlide("Job 2:2-4,5","bibles",console.log);
+    >> OpenLP.setSlide("Job 25:2-4,5","bibles",console.log);
     >> OpenLP.setSlide(2,"songs",console.log);
     */
-
+    console.log("Set slide")
     // I can't get /api/*/live callbak, so I'll detect if slide id changes
-    this.getSlide(function(data, st){  // Get current slide id
+    window.OpenLP.getSlide(function(data, st){  // Get current slide id
       const prev_id = data.results.item; // id changes when the slide is re-setted, don't care
       let server_iterations = 0;
 
@@ -19,37 +20,43 @@ window.OpenLP = {
       const text = "{\"request\": {\"id\": " + window.OpenLP._escapeId(id) + "}}";
       let api_set_uri = (component==="service")? "/api/service/set" : ("/api/"+component+"/live");
       $.getJSON(api_set_uri, {"data": text}); // Callback doesn't work
-
-      // As the callback isn't working I must ping server until new id is returned
-      function checkSlideChange(){
-        this.getSlide(function(data, st){
-          console.log("previous slide id: " + prev_id + "\ncurrent: " + data.results.item);
-          if(data.results.item === prev_id){
-            // Slide not changed yet
-            if(server_iterations++ >= 10){
-              //throw "OpenLP doesn't response";
-              callback_fn && callback_fn({}, "failure");
-            } else {
-              // Wait and check for id change
-              setTimeout(checkSlideChange, 200);
-            }
-          } else {
-            // Pass data to external function
-            //$.getJSON("/api/display/show"); //Show song -- NOPE, I WILL TURN ON MONITOR, NOT YOU
-            callback_fn && callback_fn(data, st);
-          }
-        }).fail(function(){
-          callback_fn && callback_fn({},"failure");
-        }); //end getJSON
-      } //checkSlideChange
-      setTimeout(checkSlideChange, 200); // Wait for server response
+      console.log("Waiting response");
+      window.OpenLP.checkSlideChange(prev_id, callback_fn); // Wait for server response
     }).fail(function(){
       callback_fn && callback_fn({},"failure");
-    }); //end getJSON
+    }); //end getSlide;
   }, //end setSlide() method
 
+  checkSlideChange: function(prev_id, callback_fn){
+    window.OpenLP._checkSlideChange(prev_id, callback_fn, 0, window.OpenLP);
+  },
+
+  _checkSlideChange: function(prev_id, callback_fn, server_iterations, self){
+    console.log("_checkSlideChange. iter: "+ server_iterations);
+    // As the callback isn't working I must ping server until new id is returned
+    $.getJSON("/api/controller/live/text",function(data, st){
+      console.log("previous slide id: " + prev_id + "\ncurrent: " + data.results.item);
+      if(data.results.item === prev_id){
+        // Slide not changed yet
+        if(server_iterations++ >= 10){
+          //throw "OpenLP doesn't response";
+          callback_fn && callback_fn({}, "failure");
+        } else {
+          // Wait and check for id change
+          setTimeout(self._checkSlideChange.bind(null, prev_id, callback_fn, server_iterations, self), 200);
+        }
+      } else {
+        // Pass data to external function
+        //$.getJSON("/api/display/show"); //Show song -- NOPE, I WILL TURN ON MONITOR, NOT YOU
+        callback_fn && callback_fn(data, st);
+      }
+    }).fail(function(){
+      callback_fn && callback_fn({},"failure");
+    }); //end getSlide
+  }, //checkSlideChange
+
   getSlide: function(callback_fn){
-    $.getJSON("/api/controller/live/text", callback_fn);
+    return $.getJSON("/api/controller/live/text", callback_fn);
   },
 
   addToService: function(id, component, callback_fn){
@@ -155,7 +162,7 @@ window.OpenLP = {
 };
 
 /////// LEGACY CODE /////////
-window.OpenLPControl = {
+/*window.OpenLPControl = {
   setSong: function(id, callback_ok, callback_err){
     // Sets new song in server and pass slides text and song id to callback_ok()
 
@@ -195,3 +202,4 @@ window.OpenLPControl = {
     );//getJSON
   } //end setSong() method
 };
+*/

@@ -1,4 +1,6 @@
 window.SongSearch = {
+  // Search songs in internal DB
+  
   lastUpdate: undefined,
   songList: {},
   songLyrics: [],

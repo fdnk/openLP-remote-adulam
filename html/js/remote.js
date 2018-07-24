@@ -1,4 +1,6 @@
 window.SearchCards = {
+  // JS for DOM Cards management
+
   setCards: function (cards){
     // cards = [ {title:"titulo", content:"", id:nro}, {...}, ..., {...}  ]
 
@@ -45,8 +47,67 @@ window.SearchCards = {
 }
 
 
+/****************** Bible DOM ******************/
+window.BibleSelector = {
+  init: function(){
+    // Load books
+    BibleSearch.init(function(data){
+      x = data;
+      if(data && data.status != "success"){
+        $("#bibleModal-panel > .list-group").html("<h3>Error cargando Biblia</h3>");
+        return;
+      }
 
-//****************** DOM Related ******************
+      let options = [];
+      BibleSearch.getBookList().forEach(function(book){
+        options.push("<option>" + book + "</option>");
+      });
+      $(".selectpicker.bookSelector").html(options);
+      $(".selectpicker.bookSelector").selectpicker('refresh');
+    });
+  },
+
+  selectBookEvent: function(){
+    // A book is selected. Load chapters
+    const book = $(".selectpicker.bookSelector").val();
+    let options = [];
+    window.BibleSearch.getBookChapters(book).chapters.forEach(function(obj){
+      options.push("<option class='bookopt' data-verses='" + obj.verses + "'>" + obj.chapter + "</option>")
+    });
+    $(".selectpicker.chapterSelector").html(options);
+    $(".selectpicker.chapterSelector").selectpicker('refresh');
+  },
+
+  selectChapterEvent(){
+    // A chapter is selected, Load verses
+    const chapter = $(".selectpicker.chapterSelector").val();
+    const verses = Number($('.bookopt').filter('option:selected').val());
+    console.log(chapter, verses);
+    let options = [];
+    for (let i=0; i < verses; i++){
+      options.push("<option>" + i + "</option>");
+    }
+    $(".selectpicker.verseSelector").html(options);
+    $(".selectpicker.verseSelector").selectpicker('refresh');
+  },
+  selectVerseEvent(){
+    // Clear Modal
+    $("#bibleModal-panel > .list-group").empty();
+    console.log(""+ $(".selectpicker.bookSelector").val() + " "+
+      $(".selectpicker.chapterSelector").val() + ":"+ $(".selectpicker.verseSelector").val() );
+  },
+  addVerse: function(id, text){
+    // use: addVerse("Job 7:32", "verse text goes here\nAnd newlines too.");
+    const rEx = /(?:\d+):(\d+)/;
+    const match = rEx.exec(id);
+
+    const verse = match ? ("<sup>["+match[1]+"]</sup>"):"";
+    $("#bibleModal-panel > .list-group").append('<li class="list-group-item" data-slide=' + id + '>' + verse + text + '</li>');
+  }
+}
+
+
+/****************** DOM Related ******************/
 window.Remote={
   show_results: function (results){
     // cards = [ {title:"titulo", content:"", id:nro}...]
@@ -78,9 +139,14 @@ window.Remote={
   setSong: function (key){
     this.cancelSearch();
     console.log("set song: "+key);
-    OpenLPControl.setSong(key,this.loadSlides, function(){
-      console.log("Error loading song");
-      throw "Error loading song";
+    OpenLP.setSlide(key, "songs", function(data, st){
+      if (st == "success"){
+        window.Remote.loadSlides(data);
+        window.OpenLP.setDisplay("show");
+      } else {
+        console.log("Error loading song");
+        throw "Error loading song";
+      }
     });
     /* Launch song. Option:
       - Unclosable modal
@@ -89,7 +155,6 @@ window.Remote={
   },
 
   loadSlides: function(data){
-    console.log("data");
     // Modifies DOM adding slides and triggers
     $("#songPanel > .list-group").remove();
     $("#songPanel").append('<ul class="list-group" data-song_id="'+ data.results.item +'"/>');
