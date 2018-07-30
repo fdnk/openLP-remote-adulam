@@ -67,6 +67,7 @@ window.BibleSelector = {
     });
   },
 
+/////////// UI Listeners ///////////
   selectBookEvent: function(){
     // A book is selected. Load chapters
     const book = $(".selectpicker.bookSelector").val();
@@ -81,10 +82,13 @@ window.BibleSelector = {
   selectChapterEvent(){
     // A chapter is selected, Load verses
     const chapter = $(".selectpicker.chapterSelector").val();
-    const verses = Number($('.bookopt').filter('option:selected').val());
+    if (!chapter){
+      throw("No chapter selected");
+    }
+    const verses = Number($('.bookopt').filter('option:selected').data('verses'));
     console.log(chapter, verses);
     let options = [];
-    for (let i=0; i < verses; i++){
+    for (let i=1; i <= verses; i++){
       options.push("<option>" + i + "</option>");
     }
     $(".selectpicker.verseSelector").html(options);
@@ -92,23 +96,87 @@ window.BibleSelector = {
   },
   selectVerseEvent(){
     // Clear Modal
-    $("#bibleModal-panel > .list-group").empty();
-    console.log(""+ $(".selectpicker.bookSelector").val() + " "+
-      $(".selectpicker.chapterSelector").val() + ":"+ $(".selectpicker.verseSelector").val() );
+    const lastVerse = Number($('.bookopt').filter('option:selected').data('verses'));
+    const verse = Number($(".selectpicker.verseSelector").val());
+    const chapter = Number($(".selectpicker.chapterSelector").val());
+    const book = $(".selectpicker.bookSelector").val()
+
+    if(!verse || !chapter){
+      throw("No chapter or verse selected");
+    }
+    // Clear verse list
+    $("#verse-tab").empty()
+    // Add verses
+    BibleSelector.addVerses(book, chapter, verse, lastVerse, "active");
   },
-  addVerse: function(id, text){
+
+/////////// UI Listeners ///////////
+  addVerses: function(book, chapter, first, last, active){
+    // Add the verses "book chapter:first-last" to the modal secuentially
+    first = Number(first); // security reasons
+    if (!last){
+      const last = first;
+    }
+
+    // Break condition
+    if (first > last){
+      return;
+    }
+
+    const ref = ""+ book + " "+ chapter + ":"+ first;
+    BibleSearch.query(ref, function(data){
+      if (data.status != "success"){
+        throw("Bible query: failure.");
+      }
+
+      const text = data.data[0][1].trim();
+      BibleSelector.addItem(ref, text, active);
+      // Add next verse
+      BibleSelector.addVerses(book, chapter, Number(first)+1, last);
+    });
+  },
+  addItem: function(id, text, active){
+    // Add an item (a versicle) to the modal. The id and the text must be proporioned
+    // if active == true, the verse is selected
     // use: addVerse("Job 7:32", "verse text goes here\nAnd newlines too.");
     const rEx = /(?:\d+):(\d+)/;
     const match = rEx.exec(id);
 
+    console.log("Add "+id+" | "+text);
+    m = id;
     const verse = match ? ("<sup>["+match[1]+"]</sup>"):"";
-    $("#bibleModal-panel > .list-group").append('<li class="list-group-item" data-slide=' + id + '>' + verse + text + '</li>');
+    const html = '<a class="list-group-item list-group-item-action" data-toggle="list" href="#" role="tab" data-slide="' + id + '">' + verse + text + '</a>'
+    $("#bibleModal-panel > .list-group").append(html);
+    if(active){
+      $("#bibleModal-panel > .list-group > .list-group-item").filter('[data-slide="' + id + '"]').tab("show").trigger("click");
+    }
+  },
+  displayVerse: function(id){
+    OpenLP.setSlide(id, "bibles", console.log);
+  },
+  moveChapter: function(n){
+    const current = Number($(".selectpicker.chapterSelector").val());
+
+    $(".selectpicker.chapterSelector").val(String(current+n)).selectpicker("refresh");
+    BibleSelector.selectChapterEvent();
+    $(".selectpicker.verseSelector").val("1").selectpicker("refresh");
+    BibleSelector.selectVerseEvent();
   }
 }
 
 
 /****************** DOM Related ******************/
 window.Remote={
+  pluginIcons: {
+    "songs":"fas fa-music",
+    "bibles":"fas fa-book",
+    "images":"fas fa-image",
+    "custom":"fas fa-question-circle",
+    "media":"fas fa-video",
+    "presentations":"fas fa-pen-square"
+  },
+
+  // Methods
   show_results: function (results){
     // cards = [ {title:"titulo", content:"", id:nro}...]
     var cards = results.map(function(key){
@@ -207,92 +275,33 @@ window.Remote={
 
     });
   },
-  loadBibleData: function(){
-    //nothing yet
-    BibleSearch.books.forEach(function(elem){
-      $("#bibBookList").append(
-        "<li class=\"list-group-item d-flex justify-content-between align-items-center\" data-book=\""+elem.book+"\">"+ elem.book
-        + "<span class=\"badge badge-primary badge-pill\">"+elem.chapters.length+"</span></li>");
-      });
 
-      // Trigger
-      $("#bibBookList > .list-group-item").click(function(){
-        const book = $(this).data("book");
-        //Remote.filterBibleBooks(book); // Remove another books
-        Remote.selectBibleBook(book);
-        setTimeout(function(){
-          $("#capitulo-tab").tab('show'); // Goes to next tab
-        }, 250);
-      });
-  },
+  //// Service Modal
+  serviceModalFocus: function(){
+    $("#service-tab").empty();
+    OpenLP.getService(function(x){
+      if(x.results.items){
+        x.results.items.forEach(function(item, num){
+          xx=item;
+          const id = item.id;
+          const text = item.title;
+          let icon;
+          try {
+            icon = Remote.pluginIcons[item.plugin];
+          }
+          catch(e){
+            icon = Remote.pluginIcons["custom"];
+          }
 
-  filterBibleBooks: function(name){
-    // Search for incomplete book name
-    const re = new RegExp(remove_accents(name), "i");
-
-    // jQuery don't regexp, so will I
-    BibleSearch.books.forEach(function(elem){
-      if (remove_accents(elem.book).search(re)!=-1){
-        // Show
-        $('*[data-book="'+elem.book+'"]').removeClass("d-none");
-        $('*[data-book="'+elem.book+'"]').addClass("d-flex");
+          const isactive = item.selected? "active":"";
+          const icon_html = '<i class="' + icon + ' mr-2"></i> ';
+          const html = '<a class="list-group-item list-group-item-action ' + isactive + '" data-toggle="list" href="#" role="tab" data-id="' + id + '" data-num="' + num + '">' + icon_html + text + '</a>'
+          $("#service-tab").append(html);
+        });
       }else{
-        // Hide
-        $('*[data-book="'+elem.book+'"]').addClass("d-none");
-        $('*[data-book="'+elem.book+'"]').removeClass("d-flex");
+        $("#service-tab").append("No hay nada para mostrar aquí.");
       }
     });
-  },
 
-  selectBibleBook(name){
-    // Recives a correct book name and activate only this <li>
-    $('#bibBookList > :not(*[data-book="'+name+'"])').removeClass("active"); // deactivate anothers
-    $('#bibBookList > *[data-book="'+name+'"]').addClass("active"); // activate
-
-    // Adds chapters and versicles list
-    const book = BibleSearch.books.filter(elem => (elem.book===name))[0];
-    let cod = '<div class="row">';
-    book.chapters.forEach(function(x){
-      cod += '<div id="botoneraCap" class="col-2" style="padding-top: 100%;"><button type="button" class="btn btn-outline-primary btn-lg btn-block rounded-circle" data-chap="'+x.chapter+'">'+x.chapter+'</button></div>';
-    });
-    cod += '</div>'
-    $("#capitulo-tabcontent").empty();
-    $("#capitulo-tabcontent").append('<div class="mybtn-grid d-flex" role="group">'+cod+'</div>');
-    $("#botoneraCap > .btn").click(function(evt){
-      console.log($(this).data("chap"));
-      $("#botoneraCap > .btn").removeClass("active");
-      $(this).addClass("active");
-      Remote.selectBibleChapter(name, $(this).data("chap"));
-      setTimeout(function(){
-        $("#versiculo-tab").tab('show'); // Goes to next tab
-      },250);
-    });
-  },
-
-  selectBibleChapter(name, chap){
-    // Recives a correct book anda chapter name
-
-    // Adds versicles list
-    const book = BibleSearch.books.filter(elem => (elem.book===name))[0];
-    const chaps = book.chapters.filter( v => (v.chapter==chap));
-    const n_verses = Number(chaps[0].verses);
-    const verselist = Array.from({length: n_verses}, (v, k) => k+1);
-    console.log(verselist)
-    let cod = '<div class="row">';
-    verselist.forEach(function(x){
-      cod += '<div id="botoneraVers" class="col-2" style="padding-top: 100%;"><button type="button" class="btn btn-outline-primary btn-lg btn-block rounded-circle" data-vers="'+x+'">'+x+'</button></div>';
-    });
-    cod += '</div>'
-    $("#versiculo-tabcontent").empty();
-    $("#versiculo-tabcontent").append('<div class="mybtn-grid d-flex" role="group">'+cod+'</div>');
-    $("#botoneraVers > .btn").click(function(evt){
-      console.log($(this).data("vers"));
-      $(this).toggleClass("active");
-    });  ////// TODO: Agregar boton de ok al modal
-  },
-
-  bibleModalShowTrigger(){
-    $("#searchBook").val("");
-    this.filterBibleBooks("");
   }
 }

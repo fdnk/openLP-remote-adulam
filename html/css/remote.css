@@ -1,41 +1,10 @@
-.btn-circle {
-  width: 80px;
-  height: 80px;
-  text-align: center;
-  padding: 6px 0;
-  overflow: hidden;
-  font-size: 12px;
-  line-height: 3px;
-  border-radius: 50%;
-  -webkit-border-radius: 50%;
-  -moz-border-radius: 50%;
-  /*box-shadow: 0 0 10px rgba(0, 0, 0, .9);
-  -webkit-box-shadow: 0 0 10px rgba(0, 0, 0, .9);
-  -moz-box-shadow: 0 0 10px rgba(0, 0, 0, .9);*/
-}
-.img-circle {
-  width: 64px;
-  height: 64px;
-  text-align: center;
-}
-
-.loader:disabled {
-  animation: spin 5s linear infinite;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-
-/*Modal Bible Selector*/
-#bibleModal .modal-dialog, .modal-content {
+/*Modal Size and scroll*/
+.modal-dialog, .modal-content {
   /* 80% of window height */
   height: 80%;
 }
 
-#bibleModal .modal-body {
+.modal-body {
   /* 100% = dialog height, 120px = header + footer */
   max-height: calc(100% - 120px);
   overflow-y: scroll;
