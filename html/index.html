@@ -81,7 +81,8 @@
         Opciones
       </button>
       <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuButton">
-        <a class="dropdown-item" href="#" onclick="SongSearch.update()">Actualizar</a>
+        <a class="dropdown-item" href="#" data-toggle="modal" data-target="#updatingAlertModal">Actualizar</a>
+        <a class="dropdown-item" href="#" data-toggle="modal" data-target="#screenModal">Pantalla</a>
       </div>
     </div>
   </nav>
@@ -93,6 +94,63 @@
   <div id="songPanel" class="text-center h3">
     <ul class="list-group">
     </ul>
+  </div>
+
+  <!-- Modal screen control -->
+  <div class="modal fade" id="screenModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true" data-keyboard="false" data-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Pantalla del proyector</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="col-xs-6">
+            <button type="button" class="btn btn-primary btn-block" onclick="OpenLP.setDisplay('show')">Mostrar letras</button>
+            <button type="button" class="btn btn-secondary btn-block" onclick="OpenLP.setDisplay('theme')">Ocultar letras</button>
+            <button type="button" class="btn btn-warning btn-block" onclick="OpenLP.setDisplay('desktop')">Mostrar Escritorio</button>
+            <button type="button" class="btn btn-dark btn-block" onclick="OpenLP.setDisplay('blank')">Pantalla Negra</button>
+          </div>
+          <div>
+            <div class="mt-3">
+              <p>Puede mostrar un mensaje en la pantalla por unos segundos:</p>
+              <div class="input-group mb-3">
+                  <input type="text" id="msg-alert" class="form-control" placeholder="Mostrar mensaje" aria-label="Mostrar mensaje" aria-describedby="basic-addon2">
+                  <div class="input-group-append">
+                    <button class="btn btn-outline-danger" type="button" onclick="OpenLP.showAlert($('#msg-alert').val())">Mostrar</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Update alert -->
+  <div class="modal fade" id="updatingAlertModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true" data-keyboard="false" data-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">¿Desea actualizar la base de datos?</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          El proceso dura unos minutos, y mientras tanto no podrá utilizar el proyector, quedando la pantalla en negro.
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger" data-dismiss="modal" onclick="SongSearch.update()">Actualizar</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">No, mejor no</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Modal Song Lib Update -->
@@ -114,8 +172,8 @@
 
   <!-- Bible selector modal -->
   <div class="modal fade" id="bibleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true" data-keyboard="false" data-backdrop="static">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content">
+    <div class="modal-dialog modal-dialog-centered modal-full" role="document">
+      <div class="modal-content modal-full">
 
         <div class="modal-header">
           <div class="bible-buttons">
@@ -134,7 +192,7 @@
           </button>
         </div>
 
-        <div class="modal-body">
+        <div class="modal-body body-full">
             <div id="bibleModal-panel" class="text-left">
               <div class="list-group list-group-flush" id="verse-tab" role="tablist">
                 Elija un versículo
@@ -169,9 +227,6 @@
               </div>
             </div>
         </div>
-
-        <div class="modal-footer">?</div>
-
       </div>
     </div>
   </div>
